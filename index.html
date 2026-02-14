@@ -683,11 +683,9 @@
         
         // 刪除所有記錄
         function deleteAllHistory() {
-            if (confirm('確定要刪除所有格式化記錄嗎？此操作無法復原。')) {
-                history = [];
-                localStorage.setItem('jsonHistory', JSON.stringify(history));
-                renderHistory();
-            }
+            history = [];
+            localStorage.setItem('jsonHistory', JSON.stringify(history));
+            renderHistory();
         }
         
         // 刪除單筆記錄
