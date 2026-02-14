@@ -133,9 +133,32 @@
             margin-top: 30px;
         }
         
-        .history-section h2 {
-            color: white;
+        .history-header-main {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 15px;
+        }
+        
+        .history-header-main h2 {
+            margin: 0;
+        }
+        
+        .btn-delete-all {
+            background: #dc3545;
+            color: white;
+            padding: 8px 20px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-delete-all:hover {
+            background: #c82333;
+            transform: translateY(-2px);
         }
         
         .history-item {
@@ -363,7 +386,10 @@
         </div>
         
         <div class="history-section">
-            <h2>格式化記錄</h2>
+            <div class="history-header-main">
+                <h2>格式化記錄</h2>
+                <button class="btn-delete-all" onclick="deleteAllHistory()" id="deleteAllBtn" style="display: none;">刪除所有</button>
+            </div>
             <div id="historyList">
                 <div class="empty-state">
                     <p>尚無格式化記錄</p>
@@ -486,6 +512,7 @@
         // 渲染記錄列表
         function renderHistory() {
             const container = document.getElementById('historyList');
+            const deleteAllBtn = document.getElementById('deleteAllBtn');
             
             if (history.length === 0) {
                 container.innerHTML = `
@@ -494,8 +521,12 @@
                         <p>輸入 JSON 並點擊「格式化」開始</p>
                     </div>
                 `;
+                deleteAllBtn.style.display = 'none';
                 return;
             }
+            
+            // 顯示刪除所有按鈕
+            deleteAllBtn.style.display = 'inline-block';
             
             container.innerHTML = history.map(item => `
                 <div class="history-item">
@@ -573,7 +604,16 @@
             }
         }
         
-        // 刪除記錄
+        // 刪除所有記錄
+        function deleteAllHistory() {
+            if (confirm('確定要刪除所有格式化記錄嗎？此操作無法復原。')) {
+                history = [];
+                localStorage.setItem('jsonHistory', JSON.stringify(history));
+                renderHistory();
+            }
+        }
+        
+        // 刪除單筆記錄
         function deleteHistory(id) {
             history = history.filter(h => h.id != id);
             localStorage.setItem('jsonHistory', JSON.stringify(history));
