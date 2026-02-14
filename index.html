@@ -257,6 +257,16 @@
             border-radius: 8px;
             margin-top: 10px;
             font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .info-message {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 14px;
         }
         
         footer {
@@ -287,12 +297,12 @@
     <div class="container">
         <header>
             <h1>📝 JSON 格式化工具</h1>
-            <p>格式化、驗證、修復 JSON | 自動處理中文亂碼</p>
+            <p>格式化、驗證、修復 JSON | 支援網址/curl獲取 | 自動處理中文亂碼</p>
         </header>
         
         <div class="input-section">
-            <h2>輸入 JSON</h2>
-            <textarea id="jsonInput" placeholder="在此貼上 JSON 內容..."></textarea>
+            <h2>輸入 JSON、網址或 curl 命令</h2>
+            <textarea id="jsonInput" placeholder="在此貼上 JSON 內容、網址 (https://...) 或 curl 命令..."></textarea>
             <div id="errorContainer"></div>
             
             <div class="options">
@@ -333,9 +343,71 @@
         let history = JSON.parse(localStorage.getItem('jsonHistory') || '[]');
         renderHistory();
         
-        // 格式化 JSON
-        function formatJSON() {
-            const input = document.getElementById('jsonInput').value.trim();
+        // 檢測是否為 URL
+        function isURL(str) {
+            const urlPattern = /^(https?:\/\/[^\s]+)$/i;
+            return urlPattern.test(str);
+        }
+        
+        // 從 curl 命令提取 URL
+        function extractURLFromCurl(str) {
+            // 檢測是否為 curl 命令
+            if (!str.trim().toLowerCase().startsWith('curl')) {
+                return null;
+            }
+            
+            // 嘗試提取 URL
+            const urlMatch = str.match(/['"](https?:\/\/[^'"]+)['"]/);
+            if (urlMatch) {
+                return urlMatch[1];
+            }
+            
+            // 嘗試另一種格式（沒有引號）
+            const urlMatch2 = str.match(/\s(https?:\/\/[^\s]+)/);
+            if (urlMatch2) {
+                return urlMatch2[1];
+            }
+            
+            return null;
+        }
+        
+        // 從 URL 獲取內容
+        async function fetchFromURL(url) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超時
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json, text/plain, */*'
+                    },
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const text = await response.text();
+                return text;
+                
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    throw new Error('請求超時');
+                }
+                if (error.message.includes('CORS')) {
+                    throw new Error('CORS 限制：該網站不允許跨域請求');
+                }
+                throw error;
+            }
+        }
+        
+        // 主格式化函數（支援非同步）
+        async function formatJSON() {
+            let input = document.getElementById('jsonInput').value.trim();
             const errorContainer = document.getElementById('errorContainer');
             const fixUnicode = document.getElementById('fixUnicode').checked;
             const sortKeys = document.getElementById('sortKeys').checked;
@@ -343,8 +415,33 @@
             errorContainer.innerHTML = '';
             
             if (!input) {
-                showError('請輸入 JSON 內容');
+                showError('請輸入 JSON 內容、網址或 curl 命令');
                 return;
+            }
+            
+            // 檢測是否為單一 URL
+            if (isURL(input)) {
+                try {
+                    showInfo('正在從網址獲取內容...');
+                    input = await fetchFromURL(input);
+                    showInfo('網址內容獲取成功，正在處理...');
+                } catch (error) {
+                    showError(`無法從網址獲取內容：${error.message}<br><br>💡 解決方法：<br>1. 檢查網址是否正確<br>2. 由於瀏覽器安全限制（CORS），部分網站無法直接獲取<br>3. 建議手動開啟網址，複製 JSON 內容後貼上`);
+                    return;
+                }
+            }
+            
+            // 檢測是否為 curl 命令
+            const curlURL = extractURLFromCurl(input);
+            if (curlURL) {
+                try {
+                    showInfo('正在從 curl 命令的網址獲取內容...');
+                    input = await fetchFromURL(curlURL);
+                    showInfo('內容獲取成功，正在處理...');
+                } catch (error) {
+                    showError(`無法從 curl 命令的網址獲取內容：${error.message}<br><br>💡 解決方法：<br>1. 檢查 curl 命令是否正確<br>2. 手動執行 curl 命令獲取內容<br>3. 將獲取的 JSON 內容貼上來格式化`);
+                    return;
+                }
             }
             
             try {
@@ -373,8 +470,15 @@
                 document.getElementById('jsonInput').value = '';
                 
             } catch (e) {
-                showError('JSON 格式錯誤: ' + e.message);
+                showError('JSON 格式錯誤: ' + e.message + '<br><br>請確認輸入的內容是有效的 JSON 格式');
             }
+        }
+        
+        // 顯示資訊訊息
+        function showInfo(message) {
+            document.getElementById('errorContainer').innerHTML = `
+                <div class="info-message">${message}</div>
+            `;
         }
         
         // 修復中文亂碼
@@ -509,7 +613,7 @@
             const example = {
                 "name": "測試資料",
                 "version": "1.0.0",
-                "features": ["格式化", "驗證", "修復中文亂碼"],
+                "features": ["格式化", "驗證", "修復中文亂碼", "URL 獲取"],
                 "settings": {
                     "autoFix": true,
                     "theme": "dark"
