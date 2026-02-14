@@ -129,6 +129,31 @@
             color: #555;
         }
         
+        .option-select {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .option-select label {
+            color: #555;
+            font-size: 14px;
+        }
+        
+        .option-select select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            background: white;
+        }
+        
+        .option-select select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
         .history-section {
             margin-top: 30px;
         }
@@ -214,6 +239,15 @@
         .status.error {
             background: #f8d7da;
             color: #721c24;
+        }
+        
+        .spec-badge {
+            padding: 2px 8px;
+            background: #e9ecef;
+            color: #495057;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
         }
         
         .history-actions {
@@ -376,6 +410,16 @@
                     <input type="checkbox" id="sortKeys">
                     <label for="sortKeys">排序鍵名</label>
                 </div>
+                <div class="option-select">
+                    <label for="jsonSpec">JSON Specification:</label>
+                    <select id="jsonSpec">
+                        <option value="rfc8259" selected>RFC 8259</option>
+                        <option value="rfc7159">RFC 7159</option>
+                        <option value="rfc4627">RFC 4627</option>
+                        <option value="ecma404">ECMA-404</option>
+                        <option value="skip">Skip Validation</option>
+                    </select>
+                </div>
             </div>
             
             <div class="button-group">
@@ -414,6 +458,7 @@
             const errorContainer = document.getElementById('errorContainer');
             const fixUnicode = document.getElementById('fixUnicode').checked;
             const sortKeys = document.getElementById('sortKeys').checked;
+            const jsonSpec = document.getElementById('jsonSpec').value;
             
             errorContainer.innerHTML = '';
             
@@ -430,6 +475,15 @@
                     jsonString = fixChineseEncoding(jsonString);
                 }
                 
+                // 根據規範驗證
+                if (jsonSpec !== 'skip') {
+                    const validationError = validateJSONSpec(jsonString, jsonSpec);
+                    if (validationError) {
+                        showError(`JSON 不符合 ${jsonSpec.toUpperCase()} 規範: ${validationError}`);
+                        return;
+                    }
+                }
+                
                 // 解析 JSON
                 let jsonObj = JSON.parse(jsonString);
                 
@@ -442,7 +496,7 @@
                 const formatted = JSON.stringify(jsonObj, null, 2);
                 
                 // 加入記錄
-                addHistory(formatted, true);
+                addHistory(formatted, true, jsonSpec);
                 
                 // 清空輸入
                 document.getElementById('jsonInput').value = '';
@@ -450,6 +504,27 @@
             } catch (e) {
                 showError('JSON 格式錯誤: ' + e.message);
             }
+        }
+        
+        // 驗證 JSON 規範
+        function validateJSONSpec(jsonString, spec) {
+            switch(spec) {
+                case 'rfc4627':
+                    // RFC 4627: 根必須是物件或陣列
+                    const trimmed = jsonString.trim();
+                    if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+                        return '根元素必須是物件 (object) 或陣列 (array)';
+                    }
+                    break;
+                case 'rfc7159':
+                case 'rfc8259':
+                    // RFC 7159/8259: 允許任何值（包括字串、數字、布林等）
+                    break;
+                case 'ecma404':
+                    // ECMA-404: 與 RFC 8259 基本一致
+                    break;
+            }
+            return null;
         }
         
         // 修復中文亂碼
@@ -481,13 +556,14 @@
         }
         
         // 加入記錄
-        function addHistory(formatted, success) {
+        function addHistory(formatted, success, jsonSpec = 'rfc8259') {
             const item = {
                 id: Date.now(),
                 timestamp: new Date().toLocaleString('zh-TW'),
                 content: formatted,
                 success: success,
-                collapsed: false
+                collapsed: false,
+                spec: jsonSpec
             };
             
             history.unshift(item);
@@ -536,6 +612,7 @@
                             <span class="status ${item.success ? 'success' : 'error'}">
                                 ${item.success ? '成功' : '失敗'}
                             </span>
+                            <span class="spec-badge">${item.spec ? item.spec.toUpperCase() : 'RFC 8259'}</span>
                             <span class="toggle-icon ${item.collapsed ? 'collapsed' : ''}">▼</span>
                         </div>
                         <div class="history-actions" onclick="event.stopPropagation()">
