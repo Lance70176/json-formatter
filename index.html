@@ -700,7 +700,7 @@
                             <span class="toggle-icon ${item.collapsed ? 'collapsed' : ''}">▼</span>
                         </div>
                         <div class="history-actions" onclick="event.stopPropagation()">
-                            <button class="btn-small btn-copy" onclick="copyToClipboard('${item.id}')">複製</button>
+                            <button class="btn-small btn-copy" onclick="copyToClipboard('${item.id}', this)">複製</button>
                             <button class="btn-small btn-download" onclick="downloadJSON('${item.id}')">下載</button>
                             <button class="btn-small btn-delete" onclick="deleteHistory('${item.id}')">刪除</button>
                         </div>
@@ -815,12 +815,10 @@
         }
         
         // 複製到剪貼簿
-        function copyToClipboard(id) {
+        function copyToClipboard(id, btn) {
             const item = history.find(h => h.id == id);
             if (item) {
                 navigator.clipboard.writeText(item.content).then(() => {
-                    // 找到按鈕並暫時改變文字
-                    const btn = event.target;
                     const originalText = btn.textContent;
                     btn.textContent = '✓ 已複製';
                     btn.style.background = '#28a745';
@@ -828,6 +826,8 @@
                         btn.textContent = originalText;
                         btn.style.background = '';
                     }, 1500);
+                }).catch(err => {
+                    console.error('複製失敗:', err);
                 });
             }
         }
