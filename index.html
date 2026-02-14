@@ -187,6 +187,23 @@
             transform: translateY(-2px);
         }
         
+        .btn-toggle-all {
+            background: #6c757d;
+            color: white;
+            padding: 8px 20px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-toggle-all:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+        
         .history-item {
             background: white;
             border-radius: 15px;
@@ -517,7 +534,10 @@
         <div class="history-section">
             <div class="history-header-main">
                 <h2>格式化記錄</h2>
-                <button class="btn-delete-all" onclick="deleteAllHistory()" id="deleteAllBtn" style="display: none;">刪除所有</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-toggle-all" onclick="toggleAllHistory()" id="toggleAllBtn" style="display: none;">全部收縮</button>
+                    <button class="btn-delete-all" onclick="deleteAllHistory()" id="deleteAllBtn" style="display: none;">刪除所有</button>
+                </div>
             </div>
             <div id="historyList">
                 <div class="empty-state">
@@ -535,6 +555,7 @@
     <script>
         // 儲存格式化記錄
         let history = JSON.parse(localStorage.getItem('jsonHistory') || '[]');
+        let allCollapsed = false; // 追踪是否全部收縮
         renderHistory();
         
         // Enter 鍵觸發格式化
@@ -674,6 +695,7 @@
         function renderHistory() {
             const container = document.getElementById('historyList');
             const deleteAllBtn = document.getElementById('deleteAllBtn');
+            const toggleAllBtn = document.getElementById('toggleAllBtn');
             
             if (history.length === 0) {
                 container.innerHTML = `
@@ -683,10 +705,13 @@
                     </div>
                 `;
                 deleteAllBtn.style.display = 'none';
+                toggleAllBtn.style.display = 'none';
                 return;
             }
             
             deleteAllBtn.style.display = 'inline-block';
+            toggleAllBtn.style.display = 'inline-block';
+            toggleAllBtn.textContent = allCollapsed ? '全部展開' : '全部收縮';
             
             container.innerHTML = history.map(item => `
                 <div class="history-item">
@@ -860,6 +885,16 @@
         // 刪除所有記錄
         function deleteAllHistory() {
             history = [];
+            localStorage.setItem('jsonHistory', JSON.stringify(history));
+            renderHistory();
+        }
+        
+        // 收縮/展開所有記錄
+        function toggleAllHistory() {
+            allCollapsed = !allCollapsed;
+            history.forEach(item => {
+                item.collapsed = allCollapsed;
+            });
             localStorage.setItem('jsonHistory', JSON.stringify(history));
             renderHistory();
         }
