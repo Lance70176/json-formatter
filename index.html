@@ -301,8 +301,8 @@
         </header>
         
         <div class="input-section">
-            <h2>輸入 JSON、網址或 curl 命令</h2>
-            <textarea id="jsonInput" placeholder="在此貼上 JSON 內容、網址 (https://...) 或 curl 命令..."></textarea>
+            <h2>輸入 JSON 或網址</h2>
+            <textarea id="jsonInput" placeholder="在此貼上 JSON 內容或網址 (https://...)"></textarea>
             <div id="errorContainer"></div>
             
             <div class="options">
@@ -314,6 +314,19 @@
                     <input type="checkbox" id="sortKeys">
                     <label for="sortKeys">排序鍵名</label>
                 </div>
+                <div class="option" style="width: 100%; margin-top: 10px;">
+                    <input type="checkbox" id="useProxy">
+                    <label for="useProxy">使用 CORS 代理（網址獲取失敗時勾選）</label>
+                </div>
+            </div>
+            
+            <div class="proxy-setting" id="proxySetting" style="display: none; margin-top: 10px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                <label style="display: block; margin-bottom: 8px; color: #555; font-size: 14px;">CORS 代理網址：</label>
+                <input type="text" id="proxyUrl" placeholder="https://your-proxy.workers.dev/?url=" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-family: monospace;">
+                <p style="margin-top: 8px; font-size: 12px; color: #666;">
+                    💡 建議使用 Cloudflare Workers 自建代理，或使用公開代理如：<br>
+                    <code>https://api.allorigins.win/raw?url=</code>
+                </p>
             </div>
             
             <div class="button-group">
