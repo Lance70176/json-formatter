@@ -819,7 +819,15 @@
             const item = history.find(h => h.id == id);
             if (item) {
                 navigator.clipboard.writeText(item.content).then(() => {
-                    alert('已複製到剪貼簿！');
+                    // 找到按鈕並暫時改變文字
+                    const btn = event.target;
+                    const originalText = btn.textContent;
+                    btn.textContent = '✓ 已複製';
+                    btn.style.background = '#28a745';
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                        btn.style.background = '';
+                    }, 1500);
                 });
             }
         }
